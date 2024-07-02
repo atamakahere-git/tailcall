@@ -19,7 +19,7 @@ pub mod test {
     use tailcall::core::worker::{Command, Event};
     use tailcall::core::{EnvIO, FileIO, HttpIO};
     use tailcall_http_cache::HttpCacheManager;
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::io::AsyncWriteExt;
 
     #[derive(Clone)]
     struct TestHttp {
@@ -104,12 +104,7 @@ pub mod test {
         }
 
         async fn read<'a>(&'a self, path: &'a str) -> anyhow::Result<String> {
-            let mut file = tokio::fs::File::open(path).await?;
-            let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer)
-                .await
-                .map_err(|e| anyhow!("{}", e))?;
-            Ok(String::from_utf8(buffer)?)
+            Ok(tokio::fs::read_to_string(path).await?)
         }
     }
 
