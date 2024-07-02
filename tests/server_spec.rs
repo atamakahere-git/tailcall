@@ -183,20 +183,21 @@ mod server_spec {
             "query": "{ greet }"
         });
 
-        let mut tasks = vec![];
-        for _ in 0..100 {
-            let client = client.clone();
-            let url = url.to_owned();
-            let query = query.clone();
+        let tasks: Vec<_> = (0..100)
+            .map(
+                |_| -> tokio::task::JoinHandle<Result<serde_json::Value, anyhow::Error>> {
+                    let client = client.clone();
+                    let url = url.to_owned();
+                    let query = query.clone();
 
-            let task: tokio::task::JoinHandle<Result<serde_json::Value, anyhow::Error>> =
-                tokio::spawn(async move {
-                    let response = client.post(url).json(&query).send().await?;
-                    let response_body: serde_json::Value = response.json().await?;
-                    Ok(response_body)
-                });
-            tasks.push(task);
-        }
+                    tokio::spawn(async move {
+                        let response = client.post(url).json(&query).send().await?;
+                        let response_body: serde_json::Value = response.json().await?;
+                        Ok(response_body)
+                    })
+                },
+            )
+            .collect();
 
         for task in tasks {
             let response_body = task
